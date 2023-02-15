@@ -37,12 +37,20 @@ Explore differences in height, canopy length, canopy width, and green leaves for
 # Rename species to scientific name 
 palmetto <- palmetto %>%
   mutate(species = case_when(species == "1" ~ "Serenoa repens",
-                             species == "2" ~ "Sabal etonia"))
+                             species == "2" ~ "Sabal etonia")) %>%
+  drop_na()
 
 # Subset data with only species, height, canopy length, canopy width, and green leaves
 subset_pal <- palmetto %>%
   select(species, height:green_lvs)
 
+subset_pal$species <- as.factor(subset_pal$species)
+str(subset_pal)
+
+class(subset_pal$species)
+levels(subset_pal$species)
+
+#### HELP ######
 
 ```
 
