@@ -4,10 +4,12 @@ author: "Alessandra Puig-Santana"
 date: "2023-02-13"
 output: html_document
 ---
-## Task 1 - Palmetto binary logistic regression (individual)
-In a separate .Rmd, using the Florida palmetto data (palmetto.csv), use binary logistic regression to test feasibility of using variables plant height (height), canopy length (length), canopy width (width), and number of green leaves (green_lvs) to classify whether a palmetto is species Serenoa repens or Sabal etonia. 
 
-**Data source:** Abrahamson, W.G. 2019. Survival, growth and biomass estimates of two dominant palmetto species of south-central Florida from 1981 - 2017, ongoing at 5-year intervals ver 1. Environmental Data Initiative. https://doi.org/10.6073/pasta/f2f96ec76fbbd4b9db431c79a770c4d5
+## Task 1 - Palmetto binary logistic regression (individual)
+
+In a separate .Rmd, using the Florida palmetto data (palmetto.csv), use binary logistic regression to test feasibility of using variables plant height (height), canopy length (length), canopy width (width), and number of green leaves (green_lvs) to classify whether a palmetto is species Serenoa repens or Sabal etonia.
+
+**Data source:** Abrahamson, W.G. 2019. Survival, growth and biomass estimates of two dominant palmetto species of south-central Florida from 1981 - 2017, ongoing at 5-year intervals ver 1. Environmental Data Initiative. <https://doi.org/10.6073/pasta/f2f96ec76fbbd4b9db431c79a770c4d5>
 
 ```{r setup, echo = TRUE, message = FALSE, warning = FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
@@ -27,9 +29,11 @@ palmetto <- read_csv(here('palmetto.csv'))
 ```
 
 ### Data exploration
+
 Explore differences in height, canopy length, canopy width, and green leaves for the two species. If you prefer, combine the figures into a compound figure using {patchwork} or {cowplot}. Below your data visualizations, add a sentence or two with a takeaway from the plots, e.g., based on these plots, which predictor variables are more likely to help classify species correctly?
 
 #### Setting up data to explore
+
 ```{r}
 # Species_id 1 - Serenoa repens
 # Species_id 2 - Sabal etonia
@@ -55,6 +59,7 @@ levels(subset_pal$species)
 ```
 
 #### Data visualization
+
 ```{r}
 # Plot 1 - Height vs. Canopy length
 p1 <- ggplot(data = subset_pal, aes(x = height, y = length)) +
@@ -112,11 +117,10 @@ p3 <- ggplot(data = subset_pal, aes(x = height, y = green_lvs)) +
 
 p3
 ```
-### Binary logistic regression 
 
-to determine the probability of a plant being either Serenoa repens or Sabal etonia based on several predictor variables.  Perform the analysis twice, using cross validation to compare two models:
-- Log odds of plant type using plant height, canopy length, canopy width and green leaves as predictor variable.
-Log odds of plant type using plant height, canopy width and green leaves (i.e., drop canopy length for this model)
+### Binary logistic regression
+
+to determine the probability of a plant being either Serenoa repens or Sabal etonia based on several predictor variables. Perform the analysis twice, using cross validation to compare two models: - Log odds of plant type using plant height, canopy length, canopy width and green leaves as predictor variable. Log odds of plant type using plant height, canopy width and green leaves (i.e., drop canopy length for this model)
 
 ```{r}
 # B1 - Log odds of plant type using plant height, canopy length, canopy width and green leaves as predictor variable.
@@ -130,4 +134,3 @@ blr_1 <- glm(formula = f1,
              data = subset_pal,
              family = ....)
 ```
-
