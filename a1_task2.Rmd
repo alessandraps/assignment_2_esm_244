@@ -8,7 +8,159 @@ output: html_document
 ```{r setup, echo = TRUE, message = FALSE, warning = FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
-
+# Set up chunk
+library(tidyverse)
+library(kableExtra)
+library(Metrics)
 
 ```
 
+```{r}
+# Read in data 
+lizards <- read_csv("lizards.csv")
+```
+
+# All Species NLS
+\begin{equation}
+\hat{W}=a(SVL)^b
+\end{equation}
+
+### Select model
+```{r}
+# create a function in R using given model
+f1 <- function(a,b,length){
+ out= a*(length^b)
+return(out)
+}
+```
+
+### Initial guess done by standard OLS regression
+```{r}
+# run OLS regression 
+guess_model <- lm(log(lizards$weight) ~ log(lizards$SV_length), data = lizards)
+
+guess_model # see coefficients
+
+# coefficients
+# (Intercept)  log(lizards$SV_length)  
+#  -8.257                   2.479
+
+# Using the coefficients function, we can then supply the NLS start list with the regression coefficients. Hint: Because you log transformed the data, you will have to mathematically transform the intercept coefficient to get the guess for parameter a.
+
+b <- guess_model$coefficients[2]
+a <- exp((guess_model$coefficients[1]))
+
+```
+
+### Run NLS 
+```{r}
+nls_lizards <- nls(weight~f1(a,b,SV_length),
+                  data=lizards,
+                  start=list(a = a, b=b),
+                  trace=TRUE)
+
+# summary(nls_lizards), preliminary summary table NLS results
+
+# Make a table of summary results
+broom::tidy(nls_lizards) %>% 
+  kable(caption = "Table 1: Original NLS Results") %>% 
+  kable_classic()
+```
+
+### Prediction based on the model
+```{r}
+predict_lizards <-lizards %>% 
+  mutate(predict=predict(nls_lizards,newdata=.))
+
+# Visualization on predictions - 
+ggplot(data= predict_lizards) +
+  geom_point(aes(x= SV_length,y= weight, color = sex))+
+  labs(x = "Snout-Vent Length (mm)",
+      y = "Body Weight (g)",
+      title = "NLS Data Predictions")+
+  geom_line(aes(x=SV_length,y=predict), color='snow4') +
+  scale_color_manual(values= c("sandybrown", "salmon4"))+
+  theme_minimal()+
+  theme(plot.title = element_text(hjust = 0.5))
+
+## Add figure caption
+```
+
+### Filter out the dataset for male Western Whiptail lizard (Cnemidophorus tigrisatus). Fit an NLS model to this subset. Compare the output from the species specific NLS model to the general NLS model for all species by graphing the model fits on the Western Whiptail male data. Report the RMSE for both models in the figure caption.
+```{r}
+male_whip_lizards <- lizards %>% 
+  filter(spp == "CNTI", sex == "M")
+```
+
+### Model selection
+```{r}
+# create a function in R using given model
+f1 <- function(a,b,length){
+ out= a*(length^b)
+return(out)
+}
+```
+
+### Initial Guess through standard OLS
+```{r}
+# run OLS regression on log transformed data
+guess_model_whip <- lm(log(male_whip_lizards$weight) ~ log(male_whip_lizards$SV_length), data = male_whip_lizards)
+
+# get coefficients
+coefficients(guess_model_whip)
+# Coefficients
+# (Intercept) log(lizards$SV_length) 
+#  -9.023963             2.698108
+
+# mathematically transform the intercept coefficient to get the guess for parameter a
+b_whip <- guess_model_whip$coefficients[2]
+a_whip <- exp((guess_model_whip$coefficients[1]))
+```
+
+### Run NLS
+```{r}
+nls_lizards_whip <- nls(weight~f1(a,b,SV_length),
+                  data=male_whip_lizards,
+                  start=list(a = a_whip, b=b_whip),
+                  trace=TRUE)
+
+# summary(nls_lizards_whip), preliminary summary table 
+# Create table 
+broom::tidy(nls_lizards_whip) %>% 
+  kable(caption = "Table 2: NLS Results for Male Western Whiptail Lizard Subset") %>% 
+  kable_classic()
+```
+
+# Make a prediction based on the model
+```{r}
+# prediction for whiptail model
+predict_lizards_whip <- male_whip_lizards %>% 
+  mutate(predict=predict(nls_lizards_whip,newdata=.)) %>% 
+# prediction for lizard model on whiptail dataset
+  mutate(predict_with_orignls = predict(nls_lizards, newdata=.))
+
+# plot both predictions on graph together
+ggplot(data = predict_lizards_whip) +
+  geom_point(aes(x= SV_length,
+                 y= weight))+
+  labs(x = "Snout-Vent Length (mm)",
+      y = "Body Weight (g)",
+      title = "NLS Data Predictions") +
+    geom_line(aes(x = SV_length,
+                  y = predict, 
+                  color="male")) +
+  geom_line(aes(x = SV_length, 
+                y = predict_with_orignls, 
+                color="all")) +
+  scale_colour_manual(name= "legend",
+                      values=c("male"="seagreen1","all"= "salmon4")) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# calculate RMSE for both models
+#function for RMSE
+rmselizard <- rmse(predict_lizards_whip$weight, predict_lizards_whip$predict_with_orignls)
+rmsewhiplizard <- rmse(predict_lizards_whip$weight, predict_lizards_whip$predict)
+```
+
+**Figure 1: Western Whiptail Lizard NLS Model vs. All Species NLS model** Snout-vent length (mm) and body weight (g) sampled from Jornada Basin LTER site. The green line represents the NLS predictions male wester whiptail lizards and the brown line shows the predicted data using NLS for all species and sexes. The RMSE for the species specific male NLS model is `r round(rmsewhiplizard, 3)`  and the RMSE for the all species model is `r round(rmselizard, 3)`. Because it has a lower root-mean square error, the male whiptail lizard model should be used to predict the selected data.
