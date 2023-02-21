@@ -10,12 +10,11 @@ output:
 # Introduction
 ***
 
-In this task, we create and compare two different binary logistic regression models for predicting palmetto species in south-central Florida using a long-term dataset of the two dominant palmetto species, *Serenoa repens* and *Sabel etonia*, at the Archbold Biological Station collected collected at five-year intervals between 1981-2017.
+In this task, we created and compared two different binary logistic regression models for predicting palmetto species in south-central Florida using a long-term dataset of the two dominant palmetto species, *Serenoa repens* and *Sabel etonia*, from the Archbold Biological Station collected between 1981-2017.
 
 This long term data set has many species found in Florida, so we first extra the two palmetto species of interest. Then, we explore the variables within the data set, such as plant height, number of new green leaves, and canopy length and width through visualizations to better understand the relationships between species and predictor variable. Lastly, we create our models and test them using three metrics, AIC, BIC, and cross validation to determine the best suited model.
 ***
 
-**Data source:** Abrahamson, W.G. 2019. Survival, growth and biomass estimates of two dominant palmetto species of south-central Florida from 1981 - 2017, ongoing at 5-year intervals ver 1. Environmental Data Initiative. <https://doi.org/10.6073/pasta/f2f96ec76fbbd4b9db431c79a770c4d5>
 
 ```{r setup, echo = TRUE, message = FALSE, warning = FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
@@ -107,6 +106,11 @@ p2
 # Combining both graphs using patchwork
 p1 + p2
 ```
+
+
+
+
+
 **Figure 1:** Height (cm) and canopy length (cm) of Palmetto species, *S. etonia* and *S. repens*, in beige and salmon, respectively. The left figure directly compares observations for both species, while the right figure separates observations to better visualize the spread of each species.
 
 #### Plot set 2 - Height (cm) vs Canopy width (cm) 
@@ -149,12 +153,17 @@ p4 <- ggplot(data = palmetto_sub, aes(x = height, y = width)) +
 # Combining graphs using patchwork
 p3 + p4
 ```
+
+
+
+
+
 **Figure 2:** Height (cm) and canopy width (cm) of Palmetto species, *S. etonia* and *S. repens*, in light blue and dark blue, respectively. The left figure directly compares observations for both species, while the right figure separates observations to better visualize the spread of each species.
 
 
 #### Plot 4 - Green leaves count vs Count per species 
 ```{r}
-p4 <- ggplot(data = palmetto_sub, aes(x = green_lvs, 
+p5<- ggplot(data = palmetto_sub, aes(x = green_lvs, 
                                       fill = species)) +
   geom_histogram() +
   facet_wrap(~species) + #separating by species
@@ -170,8 +179,12 @@ p4 <- ggplot(data = palmetto_sub, aes(x = green_lvs,
         legend.position = "none") + # no legend needed
   scale_fill_manual(values = c("palegreen", "palegreen4"))
 
-p4 #calling out graph
+p5 #calling out graph
 ```
+
+
+
+
 
 **Figure 3:** Number of green leaves found per Palmetto species, *S. etonia* and *S. repens*, in light green and dark green, respectively.
 
@@ -339,20 +352,20 @@ blr1_fitted <- blr1 %>%
 results_table <- blr1_fitted %>% 
   select(species, correct_prediction) %>% 
   pivot_wider(names_from = correct_prediction, values_from = correct_prediction, values_fn =   list(correct_prediction = length)) %>% 
-  mutate(percent_correctly_classified= yes/(yes+no)*100) %>%
- kable(col.names = c("Species", "Correctly Classified", "Incorrectly Classified", "% Correctly Classified"),
+  mutate(percent_correctly_classified= yes/(yes+no)*100) # percent correctly classified
+
+
+results_table %>% kable(col.names = c("Species", "Correctly Classified", "Incorrectly Classified", "% Correctly Classified"),
        caption = "Table 7: Classification Results using Model 1") %>% 
  kable_classic(position = "center")
-
-results_table #calling out
 ```
+
+
+
 
 # Conclusion
 ***
-Model 1 included the variables plant height, canopy length, canopy width and green leaves was proven to statistically predict species better than model 2. This was supported through AIC, BIC, and 10-fold cross validation results. As shown in Table 7, the percent correctly classified as *Serenoa repens* `r results_table[1,3]` 
-
-`r round((blr1_accuracy[1,4] + blr1_accuracy[2,4])/2, 2)`%
- `r palmetto_table[1,4]` 
+Model 1 included the variables plant height, canopy length, canopy width and green leaves was proven to statistically predict species better than model 2. This was supported through AIC, BIC, and 10-fold cross validation results. As shown in Table 7, the percent correctly classified as *Serenoa repens* is `r results_table$percent_correctly_classified[1]`  while *Sabel etonia* is `r results_table$percent_correctly_classified[2]`. Over 90% of the observations were correctly classified using model 1.
 
 ***
 
