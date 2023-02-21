@@ -23,7 +23,6 @@ library(AICcmodavg)
 library(GGally)
 library(tidymodels)
 library(broom)
-library(janitor)
 library(patchwork)
 
 ## Read in data
@@ -32,8 +31,7 @@ palmetto <- read_csv(here('palmetto.csv'))
 ```
 
 ### Data exploration
-
-Explore differences in height, canopy length, canopy width, and green leaves for the two species. If you prefer, combine the figures into a compound figure using {patchwork} or {cowplot}. Below your data visualizations, add a sentence or two with a takeaway from the plots, e.g., based on these plots, which predictor variables are more likely to help classify species correctly?
+Explore differences in height, canopy length, canopy width, and green leaves for the two species. 
 
 #### Setting up data to explore
 
@@ -69,7 +67,7 @@ p1 <- ggplot(data = palmetto_sub,
   theme_minimal() +
   theme(
     #customize legend elements
-    legend.position = c(0.12, 0.8),
+    legend.position = c(0.20, 0.8),
     legend.title = element_text(face = 'bold', size = 7),
     legend.text = element_text(face = 'italic', size = 7),
     legend.background = element_rect(fill = 'white'),
@@ -102,6 +100,8 @@ p2
 # Combining both graphs
 p1 + p2
 ```
+**Figure 1:** Height (cm) and canopy length (cm) of Palmetto species, *S. etonia* and *S. repens*, in beige and salmon, respectively. The left figure directly compares observations for both species, while the right figure separates observations to better visualize the spread of each species.
+
 #### Plot set 2 - Height vs Canopy width 
 ```{r}
 p3 <- ggplot(data = palmetto_sub, 
@@ -109,7 +109,7 @@ p3 <- ggplot(data = palmetto_sub,
   geom_point(aes(color = species)) +
   labs(x = 'Height (cm)',
        y = 'Canopy width (cm)') +
-  scale_color_manual(values = c('palegreen', 'palegreen4')) +
+  scale_color_manual(values = c('cadetblue1', 'cadetblue4')) +
   theme_minimal() +
   theme(
     #customize legend elements
@@ -132,7 +132,7 @@ p4 <- ggplot(data = palmetto_sub, aes(x = height, y = width)) +
   labs(x = 'Height (cm)',
        y = 'Canopy length (cm)') +
   facet_wrap(~species) +
-  scale_color_manual(values = c('palegreen', 'palegreen4'))+
+  scale_color_manual(values = c('cadetblue1', 'cadetblue4'))+
   theme_minimal()+
   theme(
     axis.text.x = element_text(size = 7),
@@ -144,6 +144,8 @@ p4 <- ggplot(data = palmetto_sub, aes(x = height, y = width)) +
 # Combining graphs 
 p3 + p4
 ```
+**Figure 2:** Height (cm) and canopy width (cm) of Palmetto species, *S. etonia* and *S. repens*, in light blue and dark blue, respectively. The left figure directly compares observations for both species, while the right figure separates observations to better visualize the spread of each species.
+
 
 #### Plot 4 - Green leaves count vs Count per species 
 ```{r}
@@ -160,10 +162,12 @@ p4 <- ggplot(data = palmetto_sub, aes(x = green_lvs, fill = species)) +
         axis.text = element_text(size = 8),
         plot.background = element_rect(fill = "white"),
         legend.position = "none")+
-  scale_fill_manual(values = c("darkolivegreen1", "forestgreen"))
+  scale_fill_manual(values = c("palegreen", "palegreen4"))
 
 p4
 ```
+
+**Figure 3:** Number of green leaves found per Palmetto species, *S. etonia* and *S. repens*, in light green and dark green, respectively.
 
 ### Binary Logistic Regression
 ```{r}
@@ -195,13 +199,13 @@ blr2_tidy <- tidy(blr2)
 
 # Tables with log odds
 blr1_tidy %>% 
-  kable(caption = "**Table 1.** BLR results for Model 1.",
+  kable(caption = "**Table 1.** Binary Logistic Regression results for Model 1.",
         col.names = c("Variable", "Coefficient", "Standard error", "Statistic", "p-value")) %>% 
   kable_styling(full_width = FALSE,
                 bootstrap_options = "hover",
                 position = "center")
 blr2_tidy %>% 
-  kable(caption = "**Table 2.** BLR results for Model 2.",
+  kable(caption = "**Table 2.** Binary Logistic Regression results for Model 2.",
         col.names = c("Variable", "Coefficient", "Standard error", "Statistic", "p-value")) %>% 
   kable_styling(full_width = FALSE,
                 bootstrap_options = "hover",
@@ -211,13 +215,13 @@ blr2_tidy %>%
 ### Model testing 
 ```{r}
 # AIC 
-aictab(list(palmetto_blr1, palmetto_blr2)) %>% 
+aictab(list(blr1, blr2)) %>% 
     kable(col.names = c("Model", "Parameters", "AIC", "Delta AIC", "Model Likelihood", "AIC Weight", "Log Likelihood", "Cumulative Weight"),
         caption = "Table 3: AIC Results") %>% 
   kable_classic(position = "center")
 
 # BIC 
-bictab(list(palmetto_blr1, palmetto_blr2)) %>% 
+bictab(list(blr1, blr2)) %>% 
     kable(col.names = c("Model", "Parameters", "BIC", "Delta BIC", "Model Likelihood", "BIC Weight", "Log Likelihood", "Cumulative Weight"),
         caption = "Table 4: BIC Results") %>% 
   kable_classic(position = "center")
@@ -281,3 +285,47 @@ metrics_2 <- metrics2 %>%
 metrics_2
 ```
 
+##### Based on the AIC and BIC values, as well as the 10-fold cross validation, model 1 performs better. The AIC and BIC for model 1 were lower and the mean accuracy metric was `r round(metrics1[1,3], 5)` compared to `r round(metrics2[1,3], 5)` for model 2.
+
+```{r}
+# use the entire dataset, rather than testing/training sets, to identify the coefficients for the final predictive model, based on model 1 (lowest AIC and BIC)
+
+f1_blr_fit <- blr_model %>% 
+  fit(f1, 
+      data = palmetto_sub)
+
+coefficient_df <- f1_blr_fit %>% 
+  tidy() %>% 
+  kable(col.names = c("Term", "Estimate","Standard Error", "Statistic", "P-Value"),
+        caption = "Table 7: Coefficients for Final Predictive Model") %>% 
+  kable_classic(position = "center")
+coefficient_df
+
+```
+
+```{r}
+# But log odds are challenging to interpret. Let's find actual *probabilities* associated with a palmetto being S etonia or S repens, based on model 1
+blr1_fitted <- blr1 %>%
+  broom::augment(type.predict = "response") %>% 
+  
+# add columns to see if the model correctly guessed the species
+  
+  mutate(species_predicted= case_when(.fitted >= 0.5 ~ "Serenoa repens",
+         TRUE ~ "Sabal etonia")) %>% 
+  mutate(correct_prediction= case_when(species == species_predicted ~ "yes",
+                                        TRUE ~ "no"))
+#create table
+table <- blr1_fitted %>% 
+  select(species, correct_prediction) %>% 
+  pivot_wider(names_from = correct_prediction, values_from = correct_prediction, values_fn =   list(correct_prediction = length)) %>% 
+  mutate(percent_correctly_classified= yes/(yes+no)*100) %>%
+ kable(col.names = c("Species", "Correctly Classified", "Incorrectly Classified", "% Correctly Classified"),
+       caption = "Table 7: Classification Results using Model 1") %>% 
+ kable_classic(position = "center")
+
+table
+```
+
+# Conclusion
+
+Model 1 (which included the variables plant height, canopy length, canopy width and green leaves) was proven to statistically predict species better than model 2 (which did not include canopy length). This was supported through AIC results, BIC results, and 10-fold cross validation. As shown in Table 3, the percent correctly classified as *Serenoa repens* was `r palmetto_table[1,4]` % and the percent for *Sabel etonia* was `r palmetto_table[2,4]` %. These numbers are fairly high, additionally supporting the choice of the model 1 predictor variables.
